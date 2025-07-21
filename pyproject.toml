@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mle-kit-mcp"
+version = "0.0.1"
+description = "MCP server that provides different tools for MLE"
+readme = "README.md"
+authors = [
+    {name = "Ilya Gusev", email = "phoenixilya@gmail.com"}
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mcp>=1.9.2",
+    "black==25.1.0",
+    "mypy==1.16.0",
+    "flake8==7.2.0",
+    "fire>=0.7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/IlyaGusev/mle_kit_mcp"
+
+[project.scripts]
+mle_kit_mcp = "mle_kit_mcp:main"
+
+[[tool.mypy.overrides]]
+module = "*"
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mle_kit_mcp*"]
+
+[tool.setuptools.package-data]
+"mle_kit_mcp" = ["py.typed"]
+"mle_kit_mcp.tools" = ["py.typed"]
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+follow_imports = "skip"
+
