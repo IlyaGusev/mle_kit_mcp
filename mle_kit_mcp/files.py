@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Optional
 
 DIR_PATH = Path(__file__).parent
 ROOT_PATH = DIR_PATH.parent
 
 WORKSPACE_DIR_PATH: Path = ROOT_PATH / "workdir"
+
 
 def set_workspace_dir(path: Path) -> None:
     global WORKSPACE_DIR_PATH
