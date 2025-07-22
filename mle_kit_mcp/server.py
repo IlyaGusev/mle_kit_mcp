@@ -12,11 +12,12 @@ from .tools.remote_gpu import (
 
 
 server = FastMCP("MLE kit MCP", stateless_http=True)
+remote_text_editor = create_remote_text_editor(text_editor)
 
 server.add_tool(bash)
 server.add_tool(text_editor)
 server.add_tool(remote_bash)
-server.add_tool(create_remote_text_editor)
+server.add_tool(remote_text_editor)
 server.add_tool(remote_download)
 
 http_app = server.streamable_http_app()
