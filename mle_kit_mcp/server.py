@@ -3,7 +3,7 @@ from pathlib import Path
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
-from .files import set_workspace_dir, WORKSPACE_DIR_PATH
+from .files import set_workspace_dir
 from .tools.bash import bash
 from .tools.text_editor import text_editor
 from .tools.remote_gpu import (
@@ -14,6 +14,7 @@ from .tools.remote_gpu import (
 
 
 server = FastMCP("MLE kit MCP", stateless_http=True)
+
 remote_text_editor = create_remote_text_editor(text_editor)
 
 server.add_tool(bash)
@@ -27,11 +28,7 @@ http_app = server.streamable_http_app()
 
 def run(host: str = "0.0.0.0", port: int = 5050, workspace: str = "workdir") -> None:
     workspace_path = Path(workspace)
-    if not workspace_path.is_absolute():
-        workspace_path = Path(__file__).parent.parent / workspace_path
     set_workspace_dir(workspace_path)
-    
-    uvicorn.run(http_app, host=host, port=port)
     uvicorn.run(http_app, host=host, port=port)
 
 

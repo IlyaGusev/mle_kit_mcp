@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from mle_kit_mcp.files import set_workspace_dir, WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import set_workspace_dir
 import tempfile
 import shutil
 
