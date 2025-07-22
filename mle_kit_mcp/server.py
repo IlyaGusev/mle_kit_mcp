@@ -1,7 +1,9 @@
 import fire  # type: ignore
+from pathlib import Path
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
+from .files import set_workspace_dir, WORKSPACE_DIR_PATH
 from .tools.bash import bash
 from .tools.text_editor import text_editor
 from .tools.remote_gpu import (
@@ -23,7 +25,13 @@ server.add_tool(remote_download)
 http_app = server.streamable_http_app()
 
 
-def run(host: str = "0.0.0.0", port: int = 5050) -> None:
+def run(host: str = "0.0.0.0", port: int = 5050, workspace: str = "workdir") -> None:
+    workspace_path = Path(workspace)
+    if not workspace_path.is_absolute():
+        workspace_path = Path(__file__).parent.parent / workspace_path
+    set_workspace_dir(workspace_path)
+    
+    uvicorn.run(http_app, host=host, port=port)
     uvicorn.run(http_app, host=host, port=port)
 
 
