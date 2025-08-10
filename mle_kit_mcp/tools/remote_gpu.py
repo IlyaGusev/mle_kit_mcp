@@ -94,7 +94,7 @@ def get_offers(vast_sdk: VastAI, gpu_name: str) -> List[int]:
 
 
 def run_command(
-    instance: InstanceInfo, command: str, timeout: int = 60
+    instance: InstanceInfo, command: str, timeout: int = 60, raise_exc: bool = True
 ) -> subprocess.CompletedProcess[str]:
     cmd = [
         "ssh",
@@ -117,7 +117,7 @@ def run_command(
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        if result.returncode != 0:
+        if result.returncode != 0 and raise_exc:
             raise Exception(
                 f"Error running command: {command}; "
                 f"Output: {result.stdout}; "
@@ -301,7 +301,7 @@ def remote_bash(command: str, timeout: Optional[int] = 60) -> str:
     init_all()
     assert _instance_info
     assert timeout
-    result = run_command(_instance_info, command, timeout=timeout)
+    result = run_command(_instance_info, command, timeout=timeout, raise_exc=False)
     output = ("STDOUT: " + result.stdout + "\n") if result.stdout else ""
     output += ("STDERR: " + result.stderr) if result.stderr else ""
     return output.replace(VAST_AI_GREETING, "")
