@@ -4,7 +4,7 @@ import os
 import pytest
 
 from mle_kit_mcp.tools import text_editor
-from mle_kit_mcp.files import WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import get_workspace_dir
 
 DOCUMENT1 = """
 The dominant sequence transduction models are based on complex recurrent or convolutional
@@ -23,11 +23,11 @@ English constituency parsing both with large and limited training data.
 
 
 def test_text_editor_view() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         f.write(DOCUMENT1)
         f.flush()
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
 
         result = text_editor("view", name, show_lines=True)
         cmd_result = os.popen(f"cat -n {str(test_file.resolve())}").read()
@@ -52,9 +52,9 @@ def test_text_editor_view() -> None:
 
 
 def test_text_editor_write() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.unlink(missing_ok=True)
         assert not test_file.exists()
 
@@ -64,9 +64,9 @@ def test_text_editor_write() -> None:
 
 
 def test_text_editor_insert() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         text_editor("insert", name, insert_line=0, new_str="Hello there!")
@@ -77,9 +77,9 @@ def test_text_editor_insert() -> None:
 
 
 def test_text_editor_str_replace() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         text_editor("str_replace", name, old_str="41.8", new_str="41.9")
@@ -88,9 +88,9 @@ def test_text_editor_str_replace() -> None:
 
 
 def test_text_editor_undo_edit() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         text_editor("str_replace", name, old_str="41.8", new_str="41.9")
@@ -114,9 +114,9 @@ def test_text_editor_view_directory() -> None:
 
 
 def test_text_editor_view_invalid_range() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         with pytest.raises(AssertionError):
@@ -127,17 +127,17 @@ def test_text_editor_view_invalid_range() -> None:
 
 
 def test_text_editor_write_existing_file() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
         text_editor("write", name, file_text="New content")
 
 
 def test_text_editor_missing_required_params() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         with pytest.raises(AssertionError):
@@ -151,9 +151,9 @@ def test_text_editor_missing_required_params() -> None:
 
 
 def test_text_editor_undo_multiple() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         text_editor("str_replace", name, old_str="41.8", new_str="41.9")
@@ -168,9 +168,9 @@ def test_text_editor_undo_multiple() -> None:
 
 
 def test_text_editor_str_replace_no_match() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         with pytest.raises(AssertionError):
@@ -178,9 +178,9 @@ def test_text_editor_str_replace_no_match() -> None:
 
 
 def test_text_editor_str_replace_multiple_matches() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text("Hello\nHello\nHello")
 
         with pytest.raises(AssertionError):
@@ -188,9 +188,9 @@ def test_text_editor_str_replace_multiple_matches() -> None:
 
 
 def test_text_editor_large_file_handling() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
 
         large_content = ""
         for i in range(1000):
@@ -207,9 +207,9 @@ def test_text_editor_large_file_handling() -> None:
 
 
 def test_text_editor_append() -> None:
-    with tempfile.NamedTemporaryFile(dir=WORKSPACE_DIR_PATH, mode="w+") as f:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)
-        test_file = WORKSPACE_DIR_PATH / name
+        test_file = get_workspace_dir() / name
         test_file.write_text(DOCUMENT1)
 
         text_editor("append", name, new_str="New line")

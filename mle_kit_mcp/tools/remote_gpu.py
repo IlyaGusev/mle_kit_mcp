@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 from vastai_sdk import VastAI  # type: ignore
 
-from mle_kit_mcp.files import WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import get_workspace_dir
 
 BASE_IMAGE = "phoenix120/holosophos_mle"
 DEFAULT_GPU_TYPE = "RTX_3090"
@@ -257,9 +257,9 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
 def send_scripts() -> None:
     assert _instance_info
-    for name in os.listdir(WORKSPACE_DIR_PATH):
+    for name in os.listdir(get_workspace_dir()):
         if name.endswith(".py"):
-            send_rsync(_instance_info, f"{WORKSPACE_DIR_PATH}/{name}", "/root")
+            send_rsync(_instance_info, f"{get_workspace_dir()}/{name}", "/root")
 
 
 def init_all() -> None:
@@ -316,7 +316,7 @@ def remote_download(file_path: str) -> str:
     """
     init_all()
     assert _instance_info
-    recieve_rsync(_instance_info, f"/root/{file_path}", f"{WORKSPACE_DIR_PATH}")
+    recieve_rsync(_instance_info, f"/root/{file_path}", f"{get_workspace_dir()}")
     return f"File '{file_path}' downloaded!"
 
 
@@ -335,12 +335,12 @@ def create_remote_text_editor(
         command = args_dict["command"]
 
         if command != "write":
-            recieve_rsync(_instance_info, f"/root/{path}", f"{WORKSPACE_DIR_PATH}")
+            recieve_rsync(_instance_info, f"/root/{path}", f"{get_workspace_dir()}")
 
         result: str = text_editor_func(*args, **kwargs)
 
         if command != "view":
-            send_rsync(_instance_info, f"{WORKSPACE_DIR_PATH}/{path}", "/root")
+            send_rsync(_instance_info, f"{get_workspace_dir()}/{path}", "/root")
 
         return result
 

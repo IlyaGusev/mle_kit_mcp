@@ -3,7 +3,7 @@ import atexit
 import signal
 from typing import Optional, Any
 
-from mle_kit_mcp.files import WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import get_workspace_dir
 
 
 _container = None
@@ -63,7 +63,7 @@ def bash(command: str) -> str:
                 tty=True,
                 stdin_open=True,
                 volumes={
-                    WORKSPACE_DIR_PATH: {
+                    get_workspace_dir(): {
                         "bind": DOCKER_WORKSPACE_DIR_PATH,
                         "mode": "rw",
                     }

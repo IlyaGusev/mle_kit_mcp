@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 from pathlib import Path
 
-from mle_kit_mcp.files import WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import get_workspace_dir
 from mle_kit_mcp.utils import truncate_content
 
 WRITE_MAX_OUTPUT_LENGTH = 500
@@ -174,7 +174,7 @@ def text_editor(
     ), "Absolute path is not supported, only relative to the work directory"
     valid_commands = ("view", "write", "str_replace", "insert", "undo_edit", "append")
 
-    path_obj = WORKSPACE_DIR_PATH / path
+    path_obj = get_workspace_dir() / path
 
     if command == "view":
         show_lines = show_lines if show_lines is not None else False

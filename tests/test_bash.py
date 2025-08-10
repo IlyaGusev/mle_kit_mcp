@@ -1,7 +1,7 @@
 import os
 
 from mle_kit_mcp.tools import bash
-from mle_kit_mcp.files import WORKSPACE_DIR_PATH
+from mle_kit_mcp.files import get_workspace_dir
 
 
 def test_bash() -> None:
@@ -12,7 +12,7 @@ def test_bash() -> None:
     assert result == "/workdir"
 
     result = bash("touch dummy")
-    assert os.path.exists(WORKSPACE_DIR_PATH / "dummy")
+    assert os.path.exists(get_workspace_dir() / "dummy")
 
     result = bash("fddafad")
     assert "fddafad: command not found" in result

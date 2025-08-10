@@ -1,9 +1,10 @@
-import fire  # type: ignore
 from pathlib import Path
+from typing import Optional
+
+import fire  # type: ignore
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
-from .files import set_workspace_dir
 from .tools.bash import bash
 from .tools.text_editor import text_editor
 from .tools.remote_gpu import (
@@ -11,24 +12,27 @@ from .tools.remote_gpu import (
     create_remote_text_editor,
     remote_download,
 )
+from .files import get_workspace_dir, WorkspaceDirectory
 
 
-server = FastMCP("MLE kit MCP", stateless_http=True)
+def run(host: str = "0.0.0.0", port: int = 5050, workspace: Optional[str] = None) -> None:
+    if workspace:
+        WorkspaceDirectory.set_dir(Path(workspace))
+    workspace_path = get_workspace_dir()
+    workspace_path.mkdir(parents=True, exist_ok=True)
 
-remote_text_editor = create_remote_text_editor(text_editor)
+    server = FastMCP("MLE kit MCP", stateless_http=True)
 
-server.add_tool(bash)
-server.add_tool(text_editor)
-server.add_tool(remote_bash)
-server.add_tool(remote_text_editor)
-server.add_tool(remote_download)
+    remote_text_editor = create_remote_text_editor(text_editor)
 
-http_app = server.streamable_http_app()
+    server.add_tool(bash)
+    server.add_tool(text_editor)
+    server.add_tool(remote_bash)
+    server.add_tool(remote_text_editor)
+    server.add_tool(remote_download)
 
+    http_app = server.streamable_http_app()
 
-def run(host: str = "0.0.0.0", port: int = 5050, workspace: str = "workdir") -> None:
-    workspace_path = Path(workspace)
-    set_workspace_dir(workspace_path)
     uvicorn.run(http_app, host=host, port=port)
 
 
