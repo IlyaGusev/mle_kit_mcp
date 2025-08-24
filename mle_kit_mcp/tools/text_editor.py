@@ -136,7 +136,6 @@ def text_editor(
     If `path` is a file and `show_lines` is True, `view` displays the result of applying `cat -n`.
     If `path` is a file and `show_lines` is False, `view` displays the result of applying `cat`.
     If `path` is a directory, `view` lists non-hidden files and directories up to 2 levels deep.
-    The `write` command cannot be used if the specified `path` already exists as a file.
     If a `command` generates a long output, it will be truncated and marked with `<response clipped>`.
     The `undo_edit` command will revert the last edit made to the file at `path`.
     Always write arguments with keys, do not rely on positions.

@@ -37,10 +37,10 @@ _instance_info: Optional[InstanceInfo] = None
 
 
 def cleanup_machine(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
-    print("Cleaning up...")
     global _instance_info
     signal.alarm(0)
     if _instance_info and _sdk:
+        print("Cleaning up...")
         try:
             _sdk.destroy_instance(id=_instance_info.instance_id)
             _instance_info = None
@@ -178,6 +178,8 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
     offer_ids = get_offers(vast_sdk, gpu_name)
 
     instance_id = None
+    info: Optional[InstanceInfo] = None
+
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
         instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=50.0)

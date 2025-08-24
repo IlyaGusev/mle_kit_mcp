@@ -9,7 +9,7 @@ from mle_kit_mcp.files import get_workspace_dir
 _container = None
 _client = None
 
-BASE_IMAGE = "python:3.9-slim"
+BASE_IMAGE = "python:3.12-slim"
 DOCKER_WORKSPACE_DIR_PATH = "/workdir"
 
 

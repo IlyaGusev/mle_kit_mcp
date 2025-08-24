@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mle-kit-mcp"
-version = "0.0.4"
+version = "0.0.5"
 description = "MCP server that provides different tools for MLE"
 readme = "README.md"
 authors = [
@@ -18,12 +18,16 @@ classifiers = [
 ]
 dependencies = [
     "mcp>=1.9.2",
-    "black==25.1.0",
-    "mypy==1.16.0",
-    "flake8==7.2.0",
     "fire>=0.7.0",
     "docker>=7.1.0",
     "vastai-sdk==0.1.16",
+]
+
+[dependency-groups]
+dev = [
+    "black==25.1.0",
+    "mypy==1.16.0",
+    "flake8==7.2.0",
     "pytest>=8.4.1",
 ]
 
