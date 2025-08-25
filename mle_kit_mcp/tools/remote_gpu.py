@@ -126,9 +126,6 @@ def run_command(
     except subprocess.TimeoutExpired:
         raise Exception(
             f"Command timed out after {timeout} seconds: {command};\n"
-            f"Host: {instance.username}@{instance.ip}:{instance.port}\n"
-            f"Captured output: {result.stdout}\n"
-            f"Captured error: {result.stderr}\n"
             f"You can increase the timeout by setting the timeout parameter to a higher value."
         )
     return result
