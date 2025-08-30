@@ -126,7 +126,7 @@ def run_command(
     except subprocess.TimeoutExpired:
         raise Exception(
             f"Command timed out after {timeout} seconds: {command};\n"
-            f"You can increase the timeout by setting the timeout parameter to a higher value."
+            f"You can increase the timeout by changing the parameter of the tool call."
         )
     return result
 
@@ -283,7 +283,7 @@ def init_all() -> None:
     assert _instance_info, "Failed to connect to a remote instance! Try again"
 
 
-def remote_bash(command: str, timeout: Optional[int] = 60) -> str:
+def remote_bash(command: str, timeout: int = 60) -> str:
     """
     Run commands in a bash shell on a remote machine with GPU cards.
     When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
