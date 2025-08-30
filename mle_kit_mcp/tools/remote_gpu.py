@@ -182,7 +182,7 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
-        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=50.0)
+        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=300.0)
         if not instance["success"]:
             continue
         instance_id = instance["new_contract"]
