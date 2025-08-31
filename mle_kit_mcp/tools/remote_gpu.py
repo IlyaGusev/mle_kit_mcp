@@ -115,7 +115,7 @@ def get_offers(vast_sdk: VastAI, gpu_name: str) -> List[int]:
 
 
 def run_command(
-    instance: InstanceInfo, command: str, timeout: int = 60, raise_exc: bool = True
+    instance: InstanceInfo, command: str, timeout: int = 60
 ) -> subprocess.CompletedProcess[str]:
     cmd = [
         "ssh",
@@ -138,16 +138,31 @@ def run_command(
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        if result.returncode != 0 and raise_exc:
-            raise Exception(
-                f"Error running command: {command}; "
-                f"Output: {result.stdout}; "
-                f"Error: {result.stderr}"
-            )
-    except subprocess.TimeoutExpired:
-        raise Exception(
+        if result.stdout:
+            result.stdout = result.stdout.replace(VAST_AI_GREETING, "").strip()
+        if result.stderr:
+            result.stderr = result.stderr.replace(VAST_AI_GREETING, "").strip()
+    except subprocess.TimeoutExpired as e:
+        output = None
+        if e.stdout:
+            output_message = e.stdout.decode("utf-8").strip()
+            output_message = output_message.replace(VAST_AI_GREETING, "").strip()
+            if output_message:
+                output = output_message
+        error = (
             f"Command timed out after {timeout} seconds: {command};\n"
-            f"You can increase the timeout by changing the parameter of the tool call."
+            f"You can increase the timeout by changing the parameter of the tool call.\n"
+        )
+        if e.stderr:
+            error_message = e.stderr.decode("utf-8").strip()
+            error_message = error_message.replace(VAST_AI_GREETING, "").strip()
+            if error_message:
+                error += f"Original stderr: {error_message}"
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=-9,
+            stdout=output,
+            stderr=error,
         )
     return result
 
@@ -255,10 +270,9 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
         max_attempts = 10
         is_okay = False
         for attempt in range(max_attempts):
-            try:
-                result = run_command(info, "echo 'SSH connection successful'")
-            except Exception as e:
-                print(f"Waiting for SSH... {e}\n(Attempt {attempt+1}/{max_attempts})")
+            result = run_command(info, "echo 'SSH connection successful'")
+            if result.returncode != 0:
+                print(f"Waiting for SSH... {result.stderr}\n(Attempt {attempt+1}/{max_attempts})")
                 time.sleep(30)
                 continue
             if "SSH connection successful" in result.stdout:
@@ -305,10 +319,10 @@ def remote_bash(command: str, timeout: int = 60) -> str:
     instance = get_instance()
     assert instance
     assert timeout
-    result = run_command(instance, command, timeout=timeout, raise_exc=False)
-    output = ("STDOUT: " + result.stdout + "\n") if result.stdout else ""
-    output += ("STDERR: " + result.stderr) if result.stderr else ""
-    return output.replace(VAST_AI_GREETING, "")
+    result = run_command(instance, command, timeout=timeout)
+    output = ("Command stdout: " + result.stdout + "\n") if result.stdout else ""
+    output += ("Command stderr: " + result.stderr) if result.stderr else ""
+    return output
 
 
 def remote_download(file_path: str) -> str:

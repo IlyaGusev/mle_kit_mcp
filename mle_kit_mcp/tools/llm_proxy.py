@@ -116,7 +116,7 @@ def llm_proxy_remote(port: Optional[int] = None) -> str:
     chosen_port = port or random.randint(5000, 6000)
     token = secrets.token_urlsafe(24)
     dependencies_cmd = f"python3 -m pip install -q --no-input {DEPENDENCIES}"
-    _remote_run_command(instance, dependencies_cmd, timeout=300, raise_exc=True)
+    _remote_run_command(instance, dependencies_cmd, timeout=300)
 
     launch_cmd = (
         f"OPENROUTER_API_KEY='{api_key}' ACCESS_TOKEN='{token}' "
@@ -125,14 +125,12 @@ def llm_proxy_remote(port: Optional[int] = None) -> str:
         f"> openrouter_proxy.log 2>&1 "
         f"& echo $! > openrouter_proxy.pid"
     )
-    _remote_run_command(instance, launch_cmd, timeout=60, raise_exc=True)
+    _remote_run_command(instance, launch_cmd, timeout=60)
 
     health_cmd = f'import httpx; print(httpx.get("http://127.0.0.1:{chosen_port}/health").json())'
     start_time = time.time()
     while time.time() - start_time < START_TIMEOUT:
-        result = _remote_run_command(
-            instance, f"python -c '{health_cmd}'", timeout=10, raise_exc=False
-        )
+        result = _remote_run_command(instance, f"python -c '{health_cmd}'", timeout=10)
         if result.returncode == 0 and "ok" in result.stdout.strip():
             break
         time.sleep(1)
