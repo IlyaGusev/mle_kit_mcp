@@ -18,7 +18,7 @@ from mle_kit_mcp.tools.remote_gpu import (
     send_rsync as _remote_send_rsync,
 )
 
-INPUT_SCRIPT_FILE_NAME = "llm_proxy_source.py"
+INPUT_SCRIPT_FILE_NAME = "llm_proxy.py"
 OUTPUT_SCRIPT_FILE_NAME = "llm_proxy.py"
 DEPENDENCIES = "fastapi uvicorn httpx openai fire"
 START_TIMEOUT = 30

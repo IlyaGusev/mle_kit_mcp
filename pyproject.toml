@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mle-kit-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server that provides different tools for MLE"
 readme = "README.md"
 authors = [
@@ -21,6 +21,8 @@ dependencies = [
     "fire>=0.7.0",
     "docker>=7.1.0",
     "vastai-sdk==0.1.16",
+    "openai>=1.102.0",
+    "fastapi>=0.116.1",
 ]
 
 [dependency-groups]
