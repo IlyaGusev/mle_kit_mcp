@@ -67,7 +67,7 @@ signal.signal(signal.SIGINT, cleanup_container)
 signal.signal(signal.SIGTERM, cleanup_container)
 
 
-def bash(command: str) -> str:
+def bash(command: str, cwd: Optional[str] = None) -> str:
     """
     Run commands in a bash shell.
     When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
@@ -80,12 +80,16 @@ def bash(command: str) -> str:
 
     Args:
         command: The bash command to run.
+        cwd: The working directory to run the command in. Relative to the workspace directory.
     """
 
     container = get_container()
+    workdir = DOCKER_WORKSPACE_DIR_PATH
+    if cwd:
+        workdir = DOCKER_WORKSPACE_DIR_PATH + "/" + cwd
     result = container.exec_run(
         ["bash", "-c", command],
-        workdir=DOCKER_WORKSPACE_DIR_PATH,
+        workdir=workdir,
         stdout=True,
         stderr=True,
     )

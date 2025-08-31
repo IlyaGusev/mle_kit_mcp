@@ -87,6 +87,18 @@ def test_text_editor_str_replace() -> None:
         assert "41.9" in new_content and "41.8" not in new_content
 
 
+def test_text_editor_str_replace_dry_run() -> None:
+    with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
+        name = os.path.basename(f.name)
+        test_file = get_workspace_dir() / name
+        test_file.write_text(DOCUMENT1)
+
+        result = text_editor("str_replace", name, old_str="41.8", new_str="41.9", dry_run=True)
+        new_content = test_file.open().read()
+        assert "41.9" not in new_content and "41.8" in new_content
+        assert "Dry run" in result
+
+
 def test_text_editor_undo_edit() -> None:
     with tempfile.NamedTemporaryFile(dir=get_workspace_dir(), mode="w+") as f:
         name = os.path.basename(f.name)

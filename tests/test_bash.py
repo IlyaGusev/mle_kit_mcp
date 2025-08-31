@@ -16,3 +16,9 @@ def test_bash() -> None:
 
     result = bash("fddafad")
     assert "fddafad: command not found" in result
+
+
+def test_bash_cwd() -> None:
+    bash("mkdir -p dummy_dir")
+    bash("touch dummy", cwd="dummy_dir")
+    assert os.path.exists(get_workspace_dir() / "dummy_dir" / "dummy")

@@ -50,17 +50,23 @@ def _insert(path: Path, insert_line: int, new_str: str) -> str:
     return truncate_content(new_content, WRITE_MAX_OUTPUT_LENGTH, target_line=insert_line)
 
 
-def _str_replace(path: Path, old_str: str, new_str: str) -> str:
+def _str_replace(path: Path, old_str: str, new_str: str, dry_run: bool = False) -> str:
     assert path.is_file(), f"File not found: {path}"
     content = path.open().read()
     count = content.count(old_str)
     assert count != 0, "old_str not found in file"
     assert count == 1, "old_str is not unique in file"
     target_line = content[: content.find(old_str) + len(old_str)].count("\n")
-    _save_file_state(path, content.splitlines(True))
     new_content = content.replace(old_str, new_str)
-    path.write_text(new_content)
-    return truncate_content(new_content, WRITE_MAX_OUTPUT_LENGTH, target_line=target_line)
+    if not dry_run:
+        _save_file_state(path, content.splitlines(True))
+        path.write_text(new_content)
+    display_content = truncate_content(
+        new_content, WRITE_MAX_OUTPUT_LENGTH, target_line=target_line
+    )
+    if dry_run:
+        display_content = f"Dry run:\n{display_content}"
+    return display_content
 
 
 def _undo_edit(path: Path) -> str:
@@ -129,6 +135,7 @@ def text_editor(
     view_start_line: Optional[int] = None,
     view_end_line: Optional[int] = None,
     show_lines: Optional[bool] = False,
+    dry_run: Optional[bool] = False,
 ) -> str:
     """
     Custom editing tool for viewing, creating and editing files.
@@ -167,6 +174,7 @@ def text_editor(
         new_str: Required for `str_replace`, `insert` and `append`.
         old_str: Required for `str_replace` containing the string in `path` to replace.
         show_lines: Optional for view command. If True, the command will also output line numbers.
+        dry_run: Optional for `str_replace` command. If True, the command won't modify the file but will display the result.
     """
     assert not path.startswith(
         "/"
@@ -191,7 +199,8 @@ def text_editor(
     if command == "str_replace":
         assert old_str is not None, "'old_str' is required for 'str_replace' command"
         assert new_str is not None, "'new_str' is required for 'str_replace' command"
-        return _str_replace(path_obj, old_str, new_str)
+        assert dry_run is not None
+        return _str_replace(path_obj, old_str, new_str, dry_run=dry_run)
     if command == "undo_edit":
         return _undo_edit(path_obj)
     assert False, f"Not a valid command! List of commands: {valid_commands}"
