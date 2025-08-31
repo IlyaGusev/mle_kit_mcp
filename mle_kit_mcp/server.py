@@ -5,6 +5,7 @@ from typing import Optional
 import fire  # type: ignore
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from dotenv import load_dotenv
 
 from .tools.bash import bash
 from .tools.text_editor import text_editor
@@ -21,6 +22,7 @@ from .files import get_workspace_dir, WorkspaceDirectory
 
 
 def run(host: str = "0.0.0.0", port: int = 5050, workspace: Optional[str] = None) -> None:
+    load_dotenv()
     if workspace:
         WorkspaceDirectory.set_dir(Path(workspace))
     workspace_path = get_workspace_dir()
