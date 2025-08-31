@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,10 @@ from .tools.remote_gpu import (
     remote_bash,
     create_remote_text_editor,
     remote_download,
+)
+from .tools.llm_proxy import (
+    llm_proxy_local,
+    llm_proxy_remote,
 )
 from .files import get_workspace_dir, WorkspaceDirectory
 
@@ -30,6 +35,9 @@ def run(host: str = "0.0.0.0", port: int = 5050, workspace: Optional[str] = None
     server.add_tool(remote_bash)
     server.add_tool(remote_text_editor)
     server.add_tool(remote_download)
+    if os.getenv("OPENROUTER_API_KEY"):
+        server.add_tool(llm_proxy_local)
+        server.add_tool(llm_proxy_remote)
 
     http_app = server.streamable_http_app()
 

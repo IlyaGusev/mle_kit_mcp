@@ -4,6 +4,10 @@ from .remote_gpu import (
     remote_bash,
     remote_download,
 )
+from .llm_proxy import (
+    llm_proxy_local,
+    llm_proxy_remote,
+)
 
 
 __all__ = [
@@ -11,4 +15,6 @@ __all__ = [
     "text_editor",
     "remote_bash",
     "remote_download",
+    "llm_proxy_local",
+    "llm_proxy_remote",
 ]

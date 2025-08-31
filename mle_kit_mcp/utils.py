@@ -1,3 +1,5 @@
+import random
+import socket
 from typing import Optional
 
 
@@ -48,3 +50,16 @@ def truncate_content(
     prefix = content[:half_length]
     suffix = content[-half_length:]
     return prefix + disclaimer + suffix
+
+
+def find_free_port() -> Optional[int]:
+    ports = list(range(5000, 6001))
+    random.shuffle(ports)
+    for port in ports:
+        try:
+            with socket.socket() as s:
+                s.bind(("", port))
+                return port
+        except OSError:
+            continue
+    return None

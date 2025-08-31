@@ -1,7 +1,10 @@
-import docker  # type: ignore
 import atexit
 import signal
 from typing import Optional, Any
+
+from docker import from_env as docker_from_env  # type: ignore
+from docker import DockerClient
+from docker.models.containers import Container  # type: ignore
 
 from mle_kit_mcp.files import get_workspace_dir
 
@@ -11,6 +14,40 @@ _client = None
 
 BASE_IMAGE = "python:3.12-slim"
 DOCKER_WORKSPACE_DIR_PATH = "/workdir"
+
+
+def get_docker_client() -> DockerClient:
+    global _client
+    if not _client:
+        _client = docker_from_env()
+    return _client
+
+
+def create_container() -> Container:
+    client = get_docker_client()
+    container = client.containers.run(
+        BASE_IMAGE,
+        "tail -f /dev/null",
+        detach=True,
+        remove=True,
+        tty=True,
+        stdin_open=True,
+        volumes={
+            get_workspace_dir(): {
+                "bind": DOCKER_WORKSPACE_DIR_PATH,
+                "mode": "rw",
+            }
+        },
+        working_dir=DOCKER_WORKSPACE_DIR_PATH,
+    )
+    return container
+
+
+def get_container() -> Container:
+    global _container
+    if not _container:
+        _container = create_container()
+    return _container
 
 
 def cleanup_container(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
@@ -45,33 +82,8 @@ def bash(command: str) -> str:
         command: The bash command to run.
     """
 
-    global _container, _client
-
-    if not _client:
-        _client = docker.from_env()
-
-    if not _container:
-        try:
-            _container = _client.containers.get("bash_runner")
-        except docker.errors.NotFound:
-            _container = _client.containers.run(
-                BASE_IMAGE,
-                "tail -f /dev/null",
-                detach=True,
-                remove=True,
-                name="bash_runner",
-                tty=True,
-                stdin_open=True,
-                volumes={
-                    get_workspace_dir(): {
-                        "bind": DOCKER_WORKSPACE_DIR_PATH,
-                        "mode": "rw",
-                    }
-                },
-                working_dir=DOCKER_WORKSPACE_DIR_PATH,
-            )
-
-    result = _container.exec_run(
+    container = get_container()
+    result = container.exec_run(
         ["bash", "-c", command],
         workdir=DOCKER_WORKSPACE_DIR_PATH,
         stdout=True,

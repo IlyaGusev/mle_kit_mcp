@@ -36,7 +36,28 @@ _sdk: Optional[VastAI] = None
 _instance_info: Optional[InstanceInfo] = None
 
 
-def cleanup_machine(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
+def get_sdk() -> VastAI:
+    global _sdk
+    if not _sdk:
+        _sdk = VastAI(api_key=os.getenv("VAST_AI_KEY"))
+    return _sdk
+
+
+def get_instance() -> InstanceInfo:
+    load_dotenv()
+    signal.alarm(GLOBAL_TIMEOUT)
+    global _instance_info
+    if not _instance_info:
+        _instance_info = launch_instance(get_sdk(), DEFAULT_GPU_TYPE)
+
+    if _instance_info:
+        send_scripts()
+
+    assert _instance_info, "Failed to connect to a remote instance! Try again"
+    return _instance_info
+
+
+def cleanup_instance(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
     global _instance_info
     signal.alarm(0)
     if _instance_info and _sdk:
@@ -50,10 +71,10 @@ def cleanup_machine(signum: Optional[Any] = None, frame: Optional[Any] = None) -
         raise KeyboardInterrupt()
 
 
-atexit.register(cleanup_machine)
-signal.signal(signal.SIGINT, cleanup_machine)
-signal.signal(signal.SIGTERM, cleanup_machine)
-signal.signal(signal.SIGALRM, cleanup_machine)
+atexit.register(cleanup_instance)
+signal.signal(signal.SIGINT, cleanup_instance)
+signal.signal(signal.SIGTERM, cleanup_instance)
+signal.signal(signal.SIGALRM, cleanup_instance)
 
 
 def wait_for_instance(vast_sdk: VastAI, instance_id: str, max_wait_time: int = 300) -> bool:
@@ -264,25 +285,6 @@ def send_scripts() -> None:
             send_rsync(_instance_info, f"{get_workspace_dir()}/{name}", "/root")
 
 
-def init_all() -> None:
-    global _sdk, _instance_info
-
-    load_dotenv()
-
-    if not _sdk:
-        _sdk = VastAI(api_key=os.getenv("VAST_AI_KEY"))
-    assert _sdk
-
-    signal.alarm(GLOBAL_TIMEOUT)
-    if not _instance_info:
-        _instance_info = launch_instance(_sdk, DEFAULT_GPU_TYPE)
-
-    if _instance_info:
-        send_scripts()
-
-    assert _instance_info, "Failed to connect to a remote instance! Try again"
-
-
 def remote_bash(command: str, timeout: int = 60) -> str:
     """
     Run commands in a bash shell on a remote machine with GPU cards.
@@ -300,10 +302,10 @@ def remote_bash(command: str, timeout: int = 60) -> str:
         timeout: Timeout for the command execution. 60 seconds by default. Set a higher value for heavy jobs.
     """
 
-    init_all()
-    assert _instance_info
+    instance = get_instance()
+    assert instance
     assert timeout
-    result = run_command(_instance_info, command, timeout=timeout, raise_exc=False)
+    result = run_command(instance, command, timeout=timeout, raise_exc=False)
     output = ("STDOUT: " + result.stdout + "\n") if result.stdout else ""
     output += ("STDERR: " + result.stderr) if result.stderr else ""
     return output.replace(VAST_AI_GREETING, "")
@@ -316,9 +318,9 @@ def remote_download(file_path: str) -> str:
     Args:
         file_path: Path to the file on a remote machine.
     """
-    init_all()
-    assert _instance_info
-    recieve_rsync(_instance_info, f"/root/{file_path}", f"{get_workspace_dir()}")
+    instance = get_instance()
+    assert instance
+    recieve_rsync(instance, f"/root/{file_path}", f"{get_workspace_dir()}")
     return f"File '{file_path}' downloaded!"
 
 
@@ -327,8 +329,7 @@ def create_remote_text_editor(
 ) -> Callable[..., str]:
     @functools.wraps(text_editor_func)
     def wrapper(*args: Any, **kwargs: Any) -> str:
-        init_all()
-        assert _instance_info
+        instance = get_instance()
 
         args_dict = {k: v for k, v in kwargs.items()}
         if args:
@@ -337,12 +338,12 @@ def create_remote_text_editor(
         command = args_dict["command"]
 
         if command != "write":
-            recieve_rsync(_instance_info, f"/root/{path}", f"{get_workspace_dir()}")
+            recieve_rsync(instance, f"/root/{path}", f"{get_workspace_dir()}")
 
         result: str = text_editor_func(*args, **kwargs)
 
         if command != "view":
-            send_rsync(_instance_info, f"{get_workspace_dir()}/{path}", "/root")
+            send_rsync(instance, f"{get_workspace_dir()}/{path}", "/root")
 
         return result
 

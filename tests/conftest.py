@@ -5,10 +5,10 @@ import tempfile
 import shutil
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def setup_workspace():
     temp_dir = Path(tempfile.mkdtemp())
     temp_dir.mkdir(parents=True, exist_ok=True)
     os.environ["WORKSPACE_DIR"] = str(temp_dir)
     yield
-    shutil.rmtree(temp_dir)
+    shutil.rmtree(temp_dir, ignore_errors=True)
