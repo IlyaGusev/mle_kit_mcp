@@ -354,11 +354,17 @@ def create_remote_text_editor(
         command = args_dict["command"]
 
         if command != "write":
+            dir_path = "/".join(path.split("/")[:-1])
+            if dir_path:
+                recieve_rsync(instance, f"/root/{path}", f"{get_workspace_dir()}/{dir_path}")
             recieve_rsync(instance, f"/root/{path}", f"{get_workspace_dir()}")
 
         result: str = text_editor_func(*args, **kwargs)
 
         if command != "view":
+            dir_path = "/".join(path.split("/")[:-1])
+            if dir_path:
+                send_rsync(instance, f"{get_workspace_dir()}/{path}", f"/root/{dir_path}")
             send_rsync(instance, f"{get_workspace_dir()}/{path}", "/root")
 
         return result
