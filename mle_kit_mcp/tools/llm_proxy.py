@@ -2,15 +2,12 @@ import os
 import json
 import time
 import random
-import secrets
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 
 from mle_kit_mcp.tools.bash import get_container
 from mle_kit_mcp.files import get_workspace_dir
-from mle_kit_mcp.utils import find_free_port
 
 from mle_kit_mcp.tools.remote_gpu import (
     get_instance as _remote_get_instance,
@@ -30,13 +27,12 @@ def _write_proxy_script(script_path: Path) -> None:
     script_path.write_text(script)
 
 
-def llm_proxy_local(port: Optional[int] = None) -> str:
+def llm_proxy_local() -> str:
     """
     Start a lightweight OpenRouter proxy inside the same Docker container used by the "bash" tool.
 
-    Returns a JSON string with fields: url, token, scope.
+    Returns a JSON string with url and scope.
     The url is reachable from inside the "bash" container as localhost.
-    Use the token in the Authorization header: "Bearer <token>" when calling the proxy.
     It runs a standard OpenAI compatible server, so you can use it with any OpenAI compatible client.
     You can use all models available on OpenRouter, for instance:
     - openai/gpt-5-mini
@@ -57,10 +53,9 @@ def llm_proxy_local(port: Optional[int] = None) -> str:
     dependencies_cmd = f"python -m pip install --quiet --no-input {DEPENDENCIES}"
     container.exec_run(["bash", "-lc", dependencies_cmd])
 
-    chosen_port = port or find_free_port()
-    token = secrets.token_urlsafe(24)
+    chosen_port = random.randint(5000, 6000)
     launch_cmd = (
-        f"OPENROUTER_API_KEY='{api_key}' ACCESS_TOKEN='{token}' "
+        f"OPENROUTER_API_KEY='{api_key}' "
         f"nohup python {OUTPUT_SCRIPT_FILE_NAME} "
         f"--host 127.0.0.1 --port {chosen_port} "
         f"> llm_proxy.log 2>&1 "
@@ -81,27 +76,22 @@ def llm_proxy_local(port: Optional[int] = None) -> str:
     return json.dumps(
         {
             "url": f"http://127.0.0.1:{chosen_port}/v1/chat/completions",
-            "token": token,
             "scope": "bash-container",
         }
     )
 
 
-def llm_proxy_remote(port: Optional[int] = None) -> str:
+def llm_proxy_remote() -> str:
     """
     Start a lightweight OpenRouter proxy on the remote GPU machine.
 
-    Returns a JSON string with fields: url, token, scope.
+    Returns a JSON string with url and scope.
     The url is reachable from inside the remote machine as localhost.
-    Use the token in the Authorization header: "Bearer <token>" when calling the proxy.
     It runs a standard OpenAI compatible server, so you can use it with any OpenAI compatible client.
     You can use all models available on OpenRouter, for instance:
     - openai/gpt-5-mini
     - google/gemini-2.5-pro
     - anthropic/claude-sonnet-4
-
-    Args:
-        port: Optional fixed port to bind on the remote. Random if omitted.
     """
 
     load_dotenv()
@@ -113,13 +103,12 @@ def llm_proxy_remote(port: Optional[int] = None) -> str:
     _write_proxy_script(script_path)
     _remote_send_rsync(instance, f"{script_path}", "/root")
 
-    chosen_port = port or random.randint(5000, 6000)
-    token = secrets.token_urlsafe(24)
+    chosen_port = random.randint(5000, 6000)
     dependencies_cmd = f"python3 -m pip install -q --no-input {DEPENDENCIES}"
     _remote_run_command(instance, dependencies_cmd, timeout=300)
 
     launch_cmd = (
-        f"OPENROUTER_API_KEY='{api_key}' ACCESS_TOKEN='{token}' "
+        f"OPENROUTER_API_KEY='{api_key}' "
         f"nohup python {OUTPUT_SCRIPT_FILE_NAME} "
         f"--host 127.0.0.1 --port {chosen_port} "
         f"> openrouter_proxy.log 2>&1 "
@@ -140,7 +129,6 @@ def llm_proxy_remote(port: Optional[int] = None) -> str:
     return json.dumps(
         {
             "url": f"http://127.0.0.1:{chosen_port}/v1/chat/completions",
-            "token": token,
             "scope": "remote-gpu",
         }
     )
