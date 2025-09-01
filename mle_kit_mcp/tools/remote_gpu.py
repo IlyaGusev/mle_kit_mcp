@@ -322,6 +322,8 @@ def remote_bash(command: str, timeout: int = 60) -> str:
     result = run_command(instance, command, timeout=timeout)
     output = ("Command stdout: " + result.stdout + "\n") if result.stdout else ""
     output += ("Command stderr: " + result.stderr) if result.stderr else ""
+    if not output.strip():
+        output = "No output from the command"
     return output
 
 
