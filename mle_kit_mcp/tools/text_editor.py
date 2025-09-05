@@ -5,8 +5,8 @@ from pathlib import Path
 from mle_kit_mcp.files import get_workspace_dir
 from mle_kit_mcp.utils import truncate_content
 
-WRITE_MAX_OUTPUT_LENGTH = 500
-READ_MAX_OUTPUT_LENGTH = 3000
+WRITE_MAX_OUTPUT_LENGTH = 1000
+READ_MAX_OUTPUT_LENGTH = 10000
 
 # Global state for undo operations
 FILE_HISTORY: Dict[str, List[List[str]]] = defaultdict(list)
