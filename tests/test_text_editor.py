@@ -5,6 +5,7 @@ import pytest
 
 from mle_kit_mcp.tools import text_editor
 from mle_kit_mcp.files import get_workspace_dir
+from mle_kit_mcp.tools.text_editor import READ_MAX_OUTPUT_LENGTH
 
 DOCUMENT1 = """
 The dominant sequence transduction models are based on complex recurrent or convolutional
@@ -211,7 +212,7 @@ def test_text_editor_large_file_handling() -> None:
 
         result = text_editor("view", name)
         assert "This content has been truncated" in result
-        assert len(result) <= 3100
+        assert len(result) <= READ_MAX_OUTPUT_LENGTH + 100
 
         result = text_editor("view", name, view_end_line=5)
         assert "<response clipped>" not in result
