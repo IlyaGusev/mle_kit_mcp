@@ -1,9 +1,8 @@
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 import fire  # type: ignore
-import uvicorn
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 
@@ -21,14 +20,26 @@ from .tools.llm_proxy import (
 from .files import get_workspace_dir, WorkspaceDirectory
 
 
-def run(host: str = "0.0.0.0", port: int = 5050, workspace: Optional[str] = None) -> None:
+def run(
+    host: str = "0.0.0.0",
+    port: int = 5050,
+    mount_path: str = "/",
+    streamable_http_path: str = "/mcp",
+    workspace: Optional[str] = None,
+    transport: Literal["stdio", "sse", "streamable-http"] = "streamable-http",
+) -> None:
     load_dotenv()
     if workspace:
         WorkspaceDirectory.set_dir(Path(workspace))
     workspace_path = get_workspace_dir()
     workspace_path.mkdir(parents=True, exist_ok=True)
 
-    server = FastMCP("MLE kit MCP", stateless_http=True)
+    server = FastMCP(
+        "MLE kit MCP",
+        stateless_http=True,
+        streamable_http_path=streamable_http_path,
+        mount_path=mount_path,
+    )
 
     remote_text_editor = create_remote_text_editor(text_editor)
 
@@ -41,9 +52,9 @@ def run(host: str = "0.0.0.0", port: int = 5050, workspace: Optional[str] = None
         server.add_tool(llm_proxy_local)
         server.add_tool(llm_proxy_remote)
 
-    http_app = server.streamable_http_app()
-
-    uvicorn.run(http_app, host=host, port=port)
+    server.settings.port = port
+    server.settings.host = host
+    server.run(transport=transport)
 
 
 if __name__ == "__main__":
