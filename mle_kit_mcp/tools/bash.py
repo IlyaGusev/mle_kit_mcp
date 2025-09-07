@@ -1,5 +1,6 @@
 import atexit
 import signal
+import shlex
 from typing import Optional, Any
 
 from docker import from_env as docker_from_env  # type: ignore
@@ -67,7 +68,11 @@ signal.signal(signal.SIGINT, cleanup_container)
 signal.signal(signal.SIGTERM, cleanup_container)
 
 
-def bash(command: str, cwd: Optional[str] = None) -> str:
+def bash(
+    command: str,
+    cwd: Optional[str] = None,
+    timeout: int = 60,
+) -> str:
     """
     Run commands in a bash shell.
     When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
@@ -76,22 +81,48 @@ def bash(command: str, cwd: Optional[str] = None) -> str:
     State is persistent across command calls and discussions with the user.
     To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.
     Please avoid commands that may produce a very large amount of output.
-    Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.
 
     Args:
         command: The bash command to run.
         cwd: The working directory to run the command in. Relative to the workspace directory.
+        timeout: Timeout for the command execution in seconds. Kills after this. 60 seconds by default.
     """
-
+    assert timeout and timeout > 0, "Timeout must be set and greater than 0"
     container = get_container()
     workdir = DOCKER_WORKSPACE_DIR_PATH
     if cwd:
-        workdir = DOCKER_WORKSPACE_DIR_PATH + "/" + cwd
+        workdir += "/" + cwd
+
+    wrapped = f"bash -lc {shlex.quote(command)}"
+    final_command = f"timeout --signal=TERM --kill-after=5s {int(timeout)}s {wrapped}"
+
     result = container.exec_run(
-        ["bash", "-c", command],
+        ["bash", "-lc", final_command],
         workdir=workdir,
         stdout=True,
         stderr=True,
+        demux=True,
     )
-    output: str = result.output.decode("utf-8").strip()
+    stdout_bytes, stderr_bytes = (
+        result.output if isinstance(result.output, tuple) else (result.output, b"")
+    )
+
+    if result.exit_code in (124, 137):
+        timeout_msg = (
+            f"Command timed out after {int(timeout)} seconds: {command};\n"
+            f"You can increase the timeout by changing the parameter of the tool call."
+        )
+        stderr_bytes = (stderr_bytes or b"") + timeout_msg.encode("utf-8")
+
+    stdout_text = (stdout_bytes or b"").decode("utf-8", errors="replace").strip()
+    stderr_text = (stderr_bytes or b"").decode("utf-8", errors="replace").strip()
+
+    output_parts = []
+    if stdout_text:
+        output_parts.append("Command stdout: " + stdout_text)
+    if stderr_text:
+        output_parts.append("Command stderr: " + stderr_text)
+    output = ("\n".join(output_parts)).strip()
+    if not output:
+        output = "No output from the command"
     return output
