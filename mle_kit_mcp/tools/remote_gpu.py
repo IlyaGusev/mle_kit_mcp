@@ -173,6 +173,7 @@ def recieve_rsync(
     rsync_cmd = [
         "rsync",
         "-avz",
+        "--max-size=20m",
         "-e",
         f"ssh -i {info.ssh_key_path} -p {info.port} -o StrictHostKeyChecking=no",
         f"{info.username}@{info.ip}:{remote_path}",
