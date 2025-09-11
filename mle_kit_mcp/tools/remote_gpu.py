@@ -15,8 +15,8 @@ from vastai_sdk import VastAI  # type: ignore
 from mle_kit_mcp.files import get_workspace_dir
 
 BASE_IMAGE = "phoenix120/holosophos_mle"
-DEFAULT_GPU_TYPE = "RTX_3090"
-GLOBAL_TIMEOUT = 43200
+DEFAULT_GPU_TYPE = os.getenv("GPU_TYPE", "RTX_3090")
+GLOBAL_TIMEOUT = 86400
 VAST_AI_GREETING = """Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
 Have fun!"""
 
