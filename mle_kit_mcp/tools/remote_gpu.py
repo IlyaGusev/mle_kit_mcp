@@ -77,7 +77,7 @@ signal.signal(signal.SIGTERM, cleanup_instance)
 signal.signal(signal.SIGALRM, cleanup_instance)
 
 
-def wait_for_instance(vast_sdk: VastAI, instance_id: str, max_wait_time: int = 300) -> bool:
+def wait_for_instance(vast_sdk: VastAI, instance_id: str, max_wait_time: int = 600) -> bool:
     print(f"Waiting for instance {instance_id} to be ready...")
     start_wait = int(time.time())
     instance_ready = False
