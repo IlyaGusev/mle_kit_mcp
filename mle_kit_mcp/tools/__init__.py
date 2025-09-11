@@ -8,6 +8,7 @@ from .llm_proxy import (
     llm_proxy_local,
     llm_proxy_remote,
 )
+from .file_system import glob, grep
 
 
 __all__ = [
@@ -17,4 +18,6 @@ __all__ = [
     "remote_download",
     "llm_proxy_local",
     "llm_proxy_remote",
+    "glob",
+    "grep",
 ]

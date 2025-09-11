@@ -1,6 +1,7 @@
 import atexit
 import signal
 import shlex
+import os
 from typing import Optional, Any
 
 from docker import from_env as docker_from_env  # type: ignore
@@ -26,6 +27,8 @@ def get_docker_client() -> DockerClient:
 
 def create_container() -> Container:
     client = get_docker_client()
+    uid = os.getuid()
+    gid = os.getgid()
     container = client.containers.run(
         BASE_IMAGE,
         "tail -f /dev/null",
@@ -33,6 +36,11 @@ def create_container() -> Container:
         remove=True,
         tty=True,
         stdin_open=True,
+        user=f"{uid}:{gid}",
+        environment={
+            "HOME": DOCKER_WORKSPACE_DIR_PATH,
+            "XDG_CACHE_HOME": f"{DOCKER_WORKSPACE_DIR_PATH}/.cache",
+        },
         volumes={
             get_workspace_dir(): {
                 "bind": DOCKER_WORKSPACE_DIR_PATH,

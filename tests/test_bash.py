@@ -33,3 +33,10 @@ def test_bash_timeout_with_output() -> None:
     result = bash("echo 'hello' && sleep 100", timeout=5)
     assert "hello" in result
     assert "Command timed out" in result
+
+
+def test_bash_ownership() -> None:
+    bash("touch dummy")
+    assert os.path.exists(get_workspace_dir() / "dummy")
+    assert os.stat(get_workspace_dir() / "dummy").st_uid == os.getuid()
+    assert os.stat(get_workspace_dir() / "dummy").st_gid == os.getgid()
