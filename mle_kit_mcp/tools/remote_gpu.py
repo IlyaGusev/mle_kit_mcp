@@ -230,6 +230,27 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
     if EXISTING_INSTANCE_ID != 0:
         instance_id = EXISTING_INSTANCE_ID
+        print("Attaching SSH key...")
+        ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
+        if not ssh_key_path.exists():
+            print(f"Generating SSH key at {ssh_key_path}...")
+            os.makedirs(ssh_key_path.parent, exist_ok=True)
+            subprocess.run(
+                [
+                    "ssh-keygen",
+                    "-t",
+                    "rsa",
+                    "-b",
+                    "4096",
+                    "-f",
+                    str(ssh_key_path),
+                    "-N",
+                    "",
+                ]
+            )
+
+        public_key = Path(f"{ssh_key_path}.pub").read_text().strip()
+        vast_sdk.attach_ssh(instance_id=instance_id, ssh_key=public_key)
         instance_details = vast_sdk.show_instance(id=instance_id)
         ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
         info = InstanceInfo(
