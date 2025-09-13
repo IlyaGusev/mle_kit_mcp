@@ -16,6 +16,7 @@ from mle_kit_mcp.files import get_workspace_dir
 
 BASE_IMAGE = "phoenix120/holosophos_mle"
 DEFAULT_GPU_TYPE = os.getenv("GPU_TYPE", "RTX_3090")
+DISK_SPACE = int(os.getenv("DISK_SPACE", 300))
 GLOBAL_TIMEOUT = 86400
 VAST_AI_GREETING = """Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
 Have fun!"""
@@ -105,7 +106,7 @@ def get_offers(vast_sdk: VastAI, gpu_name: str) -> List[int]:
         "inet_down > 400",
         "verified=True",
         "rentable=True",
-        "disk_space > 100",
+        f"disk_space > {DISK_SPACE - 1}",
     ]
     query = "  ".join(params)
     order = "score-"
@@ -170,10 +171,16 @@ def run_command(
 def recieve_rsync(
     info: InstanceInfo, remote_path: str, local_path: str
 ) -> subprocess.CompletedProcess[str]:
+    try:
+        os.makedirs(local_path, exist_ok=True)
+    except Exception:
+        parent_dir = os.path.dirname(local_path) or "."
+        os.makedirs(parent_dir, exist_ok=True)
+
     rsync_cmd = [
         "rsync",
         "-avz",
-        "--max-size=20m",
+        "--max-size=10m",
         "-e",
         f"ssh -i {info.ssh_key_path} -p {info.port} -o StrictHostKeyChecking=no",
         f"{info.username}@{info.ip}:{remote_path}",
@@ -192,9 +199,12 @@ def recieve_rsync(
 def send_rsync(
     info: InstanceInfo, local_path: str, remote_path: str
 ) -> subprocess.CompletedProcess[str]:
+    # Ensure remote destination directory exists before syncing
+    rsync_path_arg = f"--rsync-path=mkdir -p '{remote_path}' && rsync"
     rsync_cmd = [
         "rsync",
         "-avz",
+        rsync_path_arg,
         "-e",
         f"ssh -i {info.ssh_key_path} -p {info.port} -o StrictHostKeyChecking=no",
         local_path,
@@ -219,7 +229,7 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
-        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=300.0)
+        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=DISK_SPACE)
         if not instance["success"]:
             continue
         instance_id = instance["new_contract"]
@@ -295,9 +305,31 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
 def send_scripts() -> None:
     assert _instance_info
-    for name in os.listdir(get_workspace_dir()):
-        if name.endswith(".py"):
-            send_rsync(_instance_info, f"{get_workspace_dir()}/{name}", "/root")
+    workspace_dir = get_workspace_dir()
+    rsync_cmd = [
+        "rsync",
+        "-avz",
+        "--prune-empty-dirs",
+        "--include",
+        "*/",
+        "--include",
+        "*.py",
+        "--include",
+        "*.md",
+        "--include",
+        "*.txt",
+        "--exclude",
+        "*",
+        "-e",
+        f"ssh -i {_instance_info.ssh_key_path} -p {_instance_info.port} -o StrictHostKeyChecking=no",
+        f"{workspace_dir}/",
+        f"{_instance_info.username}@{_instance_info.ip}:/root/",
+    ]
+
+    result = subprocess.run(rsync_cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        error_output = f"Error syncing project: {workspace_dir} to /root. Error: {result.stderr}"
+        raise Exception(error_output)
 
 
 def remote_bash(command: str, timeout: int = 60) -> str:
@@ -377,6 +409,8 @@ def create_remote_text_editor(
     if text_editor_func.__doc__:
         orig_doc = text_editor_func.__doc__
         new_doc = orig_doc.replace("text_editor", "remote_text_editor")
-        wrapper.__doc__ = "Executes on a remote machine with GPU.\n" + new_doc
+        wrapper.__doc__ = (
+            "Executes on a remote machine with GPU.\nPlease use relative paths.\n" + new_doc
+        )
         wrapper.__name__ = "remote_text_editor"
     return wrapper
