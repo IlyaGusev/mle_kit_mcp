@@ -17,6 +17,7 @@ from mle_kit_mcp.files import get_workspace_dir
 BASE_IMAGE = "phoenix120/holosophos_mle"
 DEFAULT_GPU_TYPE = os.getenv("GPU_TYPE", "RTX_3090")
 DISK_SPACE = int(os.getenv("DISK_SPACE", 300))
+EXISTING_INSTANCE_ID = int(os.getenv("EXISTING_INSTANCE_ID", 0))
 GLOBAL_TIMEOUT = 86400
 VAST_AI_GREETING = """Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
 Have fun!"""
@@ -61,7 +62,7 @@ def get_instance() -> InstanceInfo:
 def cleanup_instance(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
     global _instance_info
     signal.alarm(0)
-    if _instance_info and _sdk:
+    if _instance_info and _sdk and EXISTING_INSTANCE_ID == 0:
         print("Cleaning up...")
         try:
             _sdk.destroy_instance(id=_instance_info.instance_id)
@@ -226,6 +227,21 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
     instance_id = None
     info: Optional[InstanceInfo] = None
+
+    if EXISTING_INSTANCE_ID != 0:
+        instance_id = EXISTING_INSTANCE_ID
+        instance_details = vast_sdk.show_instance(id=instance_id)
+        ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
+        info = InstanceInfo(
+            instance_id=instance_details.get("id"),
+            ip=instance_details.get("ssh_host"),
+            port=instance_details.get("ssh_port"),
+            username="root",
+            ssh_key_path=str(ssh_key_path),
+            gpu_name=instance_details.get("gpu_name"),
+            start_time=int(time.time()),
+        )
+        return info
 
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
