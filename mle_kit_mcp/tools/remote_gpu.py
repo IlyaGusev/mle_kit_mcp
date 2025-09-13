@@ -6,7 +6,7 @@ import signal
 import inspect
 import functools
 from pathlib import Path
-from typing import List, Optional, Any, Callable
+from typing import List, Optional, Any, Callable, Tuple
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -18,6 +18,7 @@ BASE_IMAGE = "phoenix120/holosophos_mle"
 DEFAULT_GPU_TYPE = os.getenv("GPU_TYPE", "RTX_3090")
 DISK_SPACE = int(os.getenv("DISK_SPACE", 300))
 EXISTING_INSTANCE_ID = int(os.getenv("EXISTING_INSTANCE_ID", 0))
+EXISTING_SSH_KEY = os.getenv("EXISTING_SSH_KEY", None)
 GLOBAL_TIMEOUT = 86400
 VAST_AI_GREETING = """Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
 Have fun!"""
@@ -221,6 +222,40 @@ def send_rsync(
     return result
 
 
+def check_instance(
+    vast_sdk: VastAI, instance_id: int, ssh_key_path: str
+) -> Tuple[InstanceInfo, bool]:
+    instance_details = vast_sdk.show_instance(id=instance_id)
+    ssh_key_full_path = Path(ssh_key_path).expanduser()
+    info = InstanceInfo(
+        instance_id=instance_details.get("id"),
+        ip=instance_details.get("ssh_host"),
+        port=instance_details.get("ssh_port"),
+        username="root",
+        ssh_key_path=str(ssh_key_full_path),
+        gpu_name=instance_details.get("gpu_name"),
+        start_time=int(time.time()),
+    )
+
+    print(info)
+    print(f"Checking SSH connection to {info.ip}:{info.port}...")
+    max_attempts = 10
+    is_okay = False
+    for attempt in range(max_attempts):
+        result = run_command(info, "echo 'SSH connection successful'")
+        if result.returncode != 0:
+            print(f"Waiting for SSH... {result.stderr}\n(Attempt {attempt+1}/{max_attempts})")
+            time.sleep(30)
+            continue
+        if "SSH connection successful" in result.stdout:
+            print("SSH connection established successfully!")
+            is_okay = True
+            break
+        print(f"Waiting for SSH... (Attempt {attempt+1}/{max_attempts})")
+        time.sleep(30)
+    return info, is_okay
+
+
 def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
     print(f"Selecting instance with {gpu_name}...")
     offer_ids = get_offers(vast_sdk, gpu_name)
@@ -228,41 +263,11 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
     instance_id = None
     info: Optional[InstanceInfo] = None
 
-    if EXISTING_INSTANCE_ID != 0:
+    if EXISTING_INSTANCE_ID != 0 and EXISTING_SSH_KEY:
         instance_id = EXISTING_INSTANCE_ID
-        print("Attaching SSH key...")
-        ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
-        if not ssh_key_path.exists():
-            print(f"Generating SSH key at {ssh_key_path}...")
-            os.makedirs(ssh_key_path.parent, exist_ok=True)
-            subprocess.run(
-                [
-                    "ssh-keygen",
-                    "-t",
-                    "rsa",
-                    "-b",
-                    "4096",
-                    "-f",
-                    str(ssh_key_path),
-                    "-N",
-                    "",
-                ]
-            )
-
-        public_key = Path(f"{ssh_key_path}.pub").read_text().strip()
-        vast_sdk.attach_ssh(instance_id=instance_id, ssh_key=public_key)
-        instance_details = vast_sdk.show_instance(id=instance_id)
-        ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
-        info = InstanceInfo(
-            instance_id=instance_details.get("id"),
-            ip=instance_details.get("ssh_host"),
-            port=instance_details.get("ssh_port"),
-            username="root",
-            ssh_key_path=str(ssh_key_path),
-            gpu_name=instance_details.get("gpu_name"),
-            start_time=int(time.time()),
-        )
-        return info
+        info, is_okay = check_instance(vast_sdk, instance_id, ssh_key_path=EXISTING_SSH_KEY)
+        if is_okay:
+            return info
 
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
@@ -281,10 +286,11 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
             continue
 
         print("Attaching SSH key...")
-        ssh_key_path = Path("~/.ssh/id_rsa").expanduser()
-        if not ssh_key_path.exists():
-            print(f"Generating SSH key at {ssh_key_path}...")
-            os.makedirs(ssh_key_path.parent, exist_ok=True)
+        ssh_key_path = "~/.ssh/id_rsa"
+        ssh_key_full_path = Path(ssh_key_path).expanduser()
+        if not ssh_key_full_path.exists():
+            print(f"Generating SSH key at {ssh_key_full_path}...")
+            os.makedirs(ssh_key_full_path.parent, exist_ok=True)
             subprocess.run(
                 [
                     "ssh-keygen",
@@ -293,43 +299,15 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
                     "-b",
                     "4096",
                     "-f",
-                    str(ssh_key_path),
+                    str(ssh_key_full_path),
                     "-N",
                     "",
                 ]
             )
 
-        public_key = Path(f"{ssh_key_path}.pub").read_text().strip()
+        public_key = Path(f"{ssh_key_full_path}.pub").read_text().strip()
         vast_sdk.attach_ssh(instance_id=instance_id, ssh_key=public_key)
-        instance_details = vast_sdk.show_instance(id=instance_id)
-
-        info = InstanceInfo(
-            instance_id=instance_details.get("id"),
-            ip=instance_details.get("ssh_host"),
-            port=instance_details.get("ssh_port"),
-            username="root",
-            ssh_key_path=str(ssh_key_path),
-            gpu_name=instance_details.get("gpu_name"),
-            start_time=int(time.time()),
-        )
-
-        print(info)
-        print(f"Checking SSH connection to {info.ip}:{info.port}...")
-        max_attempts = 10
-        is_okay = False
-        for attempt in range(max_attempts):
-            result = run_command(info, "echo 'SSH connection successful'")
-            if result.returncode != 0:
-                print(f"Waiting for SSH... {result.stderr}\n(Attempt {attempt+1}/{max_attempts})")
-                time.sleep(30)
-                continue
-            if "SSH connection successful" in result.stdout:
-                print("SSH connection established successfully!")
-                is_okay = True
-                break
-            print(f"Waiting for SSH... (Attempt {attempt+1}/{max_attempts})")
-            time.sleep(30)
-
+        info, is_okay = check_instance(vast_sdk, instance_id, ssh_key_path=str(ssh_key_full_path))
         if not is_okay:
             print(f"Destroying instance {instance_id}...")
             vast_sdk.destroy_instance(id=instance_id)
@@ -342,31 +320,9 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
 
 def send_scripts() -> None:
     assert _instance_info
-    workspace_dir = get_workspace_dir()
-    rsync_cmd = [
-        "rsync",
-        "-avz",
-        "--prune-empty-dirs",
-        "--include",
-        "*/",
-        "--include",
-        "*.py",
-        "--include",
-        "*.md",
-        "--include",
-        "*.txt",
-        "--exclude",
-        "*",
-        "-e",
-        f"ssh -i {_instance_info.ssh_key_path} -p {_instance_info.port} -o StrictHostKeyChecking=no",
-        f"{workspace_dir}/",
-        f"{_instance_info.username}@{_instance_info.ip}:/root/",
-    ]
-
-    result = subprocess.run(rsync_cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        error_output = f"Error syncing project: {workspace_dir} to /root. Error: {result.stderr}"
-        raise Exception(error_output)
+    for name in os.listdir(get_workspace_dir()):
+        if name.endswith(".py"):
+            send_rsync(_instance_info, f"{get_workspace_dir()}/{name}", "/root")
 
 
 def remote_bash(command: str, timeout: int = 60) -> str:
