@@ -1,6 +1,7 @@
-import os
 from typing import Optional
 from pathlib import Path
+
+from mle_kit_mcp.settings import settings
 
 DIR_PATH = Path(__file__).parent
 ROOT_PATH = DIR_PATH.parent
@@ -13,7 +14,7 @@ class WorkspaceDirectory:
     @classmethod
     def get_dir(cls) -> Path:
         if cls.workspace_dir is None:
-            return Path(os.getenv("WORKSPACE_DIR", DEFAULT_WORKSPACE_DIR_PATH))
+            return Path(settings.WORKSPACE_DIR)
         return cls.workspace_dir
 
     @classmethod

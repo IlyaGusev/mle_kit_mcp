@@ -9,16 +9,12 @@ from pathlib import Path
 from typing import List, Optional, Any, Callable, Tuple
 from dataclasses import dataclass
 
-from dotenv import load_dotenv
 from vastai_sdk import VastAI  # type: ignore
 
 from mle_kit_mcp.files import get_workspace_dir
+from mle_kit_mcp.settings import settings
 
 BASE_IMAGE = "phoenix120/holosophos_mle"
-DEFAULT_GPU_TYPE = os.getenv("GPU_TYPE", "RTX_3090")
-DISK_SPACE = int(os.getenv("DISK_SPACE", 300))
-EXISTING_INSTANCE_ID = int(os.getenv("EXISTING_INSTANCE_ID", 0))
-EXISTING_SSH_KEY = os.getenv("EXISTING_SSH_KEY", None)
 GLOBAL_TIMEOUT = 86400
 VAST_AI_GREETING = """Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
 Have fun!"""
@@ -42,16 +38,15 @@ _instance_info: Optional[InstanceInfo] = None
 def get_sdk() -> VastAI:
     global _sdk
     if not _sdk:
-        _sdk = VastAI(api_key=os.getenv("VAST_AI_KEY"))
+        _sdk = VastAI(api_key=settings.VAST_AI_KEY)
     return _sdk
 
 
 def get_instance() -> InstanceInfo:
-    load_dotenv()
     signal.alarm(GLOBAL_TIMEOUT)
     global _instance_info
     if not _instance_info:
-        _instance_info = launch_instance(get_sdk(), DEFAULT_GPU_TYPE)
+        _instance_info = launch_instance(get_sdk(), settings.GPU_TYPE)
 
     if _instance_info:
         send_scripts()
@@ -63,7 +58,7 @@ def get_instance() -> InstanceInfo:
 def cleanup_instance(signum: Optional[Any] = None, frame: Optional[Any] = None) -> None:
     global _instance_info
     signal.alarm(0)
-    if _instance_info and _sdk and EXISTING_INSTANCE_ID == 0:
+    if _instance_info and _sdk and settings.EXISTING_INSTANCE_ID is None:
         print("Cleaning up...")
         try:
             _sdk.destroy_instance(id=_instance_info.instance_id)
@@ -108,7 +103,7 @@ def get_offers(vast_sdk: VastAI, gpu_name: str) -> List[int]:
         "inet_down > 400",
         "verified=True",
         "rentable=True",
-        f"disk_space > {DISK_SPACE - 1}",
+        f"disk_space > {settings.DISK_SPACE - 1}",
     ]
     query = "  ".join(params)
     order = "score-"
@@ -263,15 +258,17 @@ def launch_instance(vast_sdk: VastAI, gpu_name: str) -> Optional[InstanceInfo]:
     instance_id = None
     info: Optional[InstanceInfo] = None
 
-    if EXISTING_INSTANCE_ID != 0 and EXISTING_SSH_KEY:
-        instance_id = EXISTING_INSTANCE_ID
-        info, is_okay = check_instance(vast_sdk, instance_id, ssh_key_path=EXISTING_SSH_KEY)
+    if settings.EXISTING_INSTANCE_ID and settings.EXISTING_SSH_KEY:
+        instance_id = settings.EXISTING_INSTANCE_ID
+        info, is_okay = check_instance(
+            vast_sdk, instance_id, ssh_key_path=settings.EXISTING_SSH_KEY
+        )
         if is_okay:
             return info
 
     for offer_id in offer_ids:
         print(f"Launching offer {offer_id}...")
-        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=DISK_SPACE)
+        instance = vast_sdk.create_instance(id=offer_id, image=BASE_IMAGE, disk=settings.DISK_SPACE)
         if not instance["success"]:
             continue
         instance_id = instance["new_contract"]

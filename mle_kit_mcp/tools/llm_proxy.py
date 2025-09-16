@@ -1,10 +1,9 @@
-import os
 import json
 import time
 import random
 from pathlib import Path
 
-from dotenv import load_dotenv
+from mle_kit_mcp.settings import settings
 
 from mle_kit_mcp.tools.bash import get_container
 from mle_kit_mcp.files import get_workspace_dir
@@ -43,8 +42,7 @@ def llm_proxy_local() -> str:
         port: Optional fixed port to bind inside the container. Random if omitted.
     """
 
-    load_dotenv()
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    api_key = settings.OPENROUTER_API_KEY
     assert api_key, "Set OPENROUTER_API_KEY in the environment before starting the proxy."
 
     _write_proxy_script(get_workspace_dir() / OUTPUT_SCRIPT_FILE_NAME)
@@ -94,8 +92,7 @@ def llm_proxy_remote() -> str:
     - anthropic/claude-sonnet-4
     """
 
-    load_dotenv()
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    api_key = settings.OPENROUTER_API_KEY
     assert api_key, "Set OPENROUTER_API_KEY in the environment before starting the proxy."
 
     instance = _remote_get_instance()

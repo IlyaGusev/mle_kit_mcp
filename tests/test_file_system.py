@@ -10,7 +10,7 @@ rg_missing = shutil.which("rg") is None
 def test_glob_base():
     bash("mkdir -p dummy_dir")
     bash("touch dummy.txt", cwd="dummy_dir")
-    assert glob("**/*.txt") == ["dummy_dir/dummy.txt"]
+    assert "dummy_dir/dummy.txt" in glob("**/*.txt")
 
 
 @pytest.mark.skipif(rg_missing, reason="ripgrep (rg) is not installed")

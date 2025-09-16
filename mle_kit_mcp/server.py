@@ -1,36 +1,33 @@
-import os
-from pathlib import Path
 from typing import Optional, Literal
 
 import fire  # type: ignore
 from mcp.server.fastmcp import FastMCP
-from dotenv import load_dotenv
+from mle_kit_mcp.settings import settings
 
-from .tools.bash import bash
-from .tools.text_editor import text_editor
-from .tools.remote_gpu import (
+from mle_kit_mcp.tools.bash import bash
+from mle_kit_mcp.tools.text_editor import text_editor
+from mle_kit_mcp.tools.remote_gpu import (
     remote_bash,
     create_remote_text_editor,
     remote_download,
 )
-from .tools.llm_proxy import (
+from mle_kit_mcp.tools.llm_proxy import (
     llm_proxy_local,
     llm_proxy_remote,
 )
-from .files import get_workspace_dir, WorkspaceDirectory
+from mle_kit_mcp.files import get_workspace_dir
 
 
 def run(
     host: str = "0.0.0.0",
-    port: int = 5050,
+    port: Optional[int] = None,
     mount_path: str = "/",
     streamable_http_path: str = "/mcp",
-    workspace: Optional[str] = None,
     transport: Literal["stdio", "sse", "streamable-http"] = "streamable-http",
 ) -> None:
-    load_dotenv()
-    if workspace:
-        WorkspaceDirectory.set_dir(Path(workspace))
+    assert (
+        settings.WORKSPACE_DIR is not None
+    ), "WORKSPACE_DIR is not set. Please set it with the environment variable."
     workspace_path = get_workspace_dir()
     workspace_path.mkdir(parents=True, exist_ok=True)
 
@@ -48,10 +45,12 @@ def run(
     server.add_tool(remote_bash)
     server.add_tool(remote_text_editor)
     server.add_tool(remote_download)
-    if os.getenv("OPENROUTER_API_KEY"):
+    if settings.OPENROUTER_API_KEY:
         server.add_tool(llm_proxy_local)
         server.add_tool(llm_proxy_remote)
 
+    if port is None:
+        port = int(settings.PORT)
     server.settings.port = port
     server.settings.host = host
     server.run(transport=transport)
