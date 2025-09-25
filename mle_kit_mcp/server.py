@@ -15,6 +15,7 @@ from mle_kit_mcp.tools.llm_proxy import (
     llm_proxy_local,
     llm_proxy_remote,
 )
+from mle_kit_mcp.tools.file_system import use_glob, use_grep
 from mle_kit_mcp.files import get_workspace_dir
 
 
@@ -45,6 +46,8 @@ def run(
     server.add_tool(remote_bash)
     server.add_tool(remote_text_editor)
     server.add_tool(remote_download)
+    server.add_tool(use_glob)
+    server.add_tool(use_grep)
     if settings.OPENROUTER_API_KEY:
         server.add_tool(llm_proxy_local)
         server.add_tool(llm_proxy_remote)
