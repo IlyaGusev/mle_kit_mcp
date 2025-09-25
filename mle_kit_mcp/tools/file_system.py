@@ -5,7 +5,7 @@ import subprocess
 from mle_kit_mcp.files import get_workspace_dir
 
 
-def glob(pattern: str, path: Optional[str] = None) -> List[str]:
+def use_glob(pattern: str, path: Optional[str] = None) -> List[str]:
     """
     - Fast file pattern matching tool that works with any codebase size
     - Supports glob patterns like "**/*.js" or "src/**/*.ts"
@@ -32,7 +32,7 @@ def glob(pattern: str, path: Optional[str] = None) -> List[str]:
     return resolved_files
 
 
-def grep(
+def use_grep(
     pattern: str,
     path: Optional[str] = None,
     glob: Optional[str] = None,
