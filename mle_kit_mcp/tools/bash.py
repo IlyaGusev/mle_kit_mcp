@@ -14,7 +14,7 @@ from mle_kit_mcp.files import get_workspace_dir
 _container = None
 _client = None
 
-BASE_IMAGE = "python:3.12-slim"
+BASE_IMAGE = "phoenix120/holosophos_mle"
 DOCKER_WORKSPACE_DIR_PATH = "/workdir"
 
 
