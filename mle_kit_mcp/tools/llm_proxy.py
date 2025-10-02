@@ -37,9 +37,6 @@ def llm_proxy_local() -> str:
     - openai/gpt-5-mini
     - google/gemini-2.5-pro
     - anthropic/claude-sonnet-4
-
-    Args:
-        port: Optional fixed port to bind inside the container. Random if omitted.
     """
 
     api_key = settings.OPENROUTER_API_KEY
