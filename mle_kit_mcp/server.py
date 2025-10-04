@@ -2,8 +2,8 @@ from typing import Optional, Literal
 
 import fire  # type: ignore
 from mcp.server.fastmcp import FastMCP
-from mle_kit_mcp.settings import settings
 
+from mle_kit_mcp.settings import settings
 from mle_kit_mcp.tools.bash import bash
 from mle_kit_mcp.tools.text_editor import text_editor
 from mle_kit_mcp.tools.remote_gpu import (
