@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     WORKSPACE_DIR: Optional[str] = None
+    HOST_WORKSPACE_DIR: Optional[str] = None
     PORT: int = 5057
 
     GPU_TYPE: str = "RTX_3090"
