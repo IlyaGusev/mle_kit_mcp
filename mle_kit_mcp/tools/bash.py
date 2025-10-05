@@ -42,7 +42,7 @@ def create_container() -> Container:
             "XDG_CACHE_HOME": f"{DOCKER_WORKSPACE_DIR_PATH}/.cache",
         },
         volumes={
-            get_host_workspace_dir(): {
+            str(get_host_workspace_dir()): {
                 "bind": DOCKER_WORKSPACE_DIR_PATH,
                 "mode": "rw",
             }
