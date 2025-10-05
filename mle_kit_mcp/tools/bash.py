@@ -8,7 +8,7 @@ from docker import from_env as docker_from_env  # type: ignore
 from docker import DockerClient
 from docker.models.containers import Container  # type: ignore
 
-from mle_kit_mcp.files import get_workspace_dir
+from mle_kit_mcp.files import get_host_workspace_dir
 
 
 _container = None
@@ -42,7 +42,7 @@ def create_container() -> Container:
             "XDG_CACHE_HOME": f"{DOCKER_WORKSPACE_DIR_PATH}/.cache",
         },
         volumes={
-            get_workspace_dir(): {
+            str(get_host_workspace_dir()): {
                 "bind": DOCKER_WORKSPACE_DIR_PATH,
                 "mode": "rw",
             }
