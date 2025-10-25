@@ -1,6 +1,6 @@
 import os
 
-from mle_kit_mcp.tools import bash
+from mle_kit_mcp.tools import bash, install_with_apt
 from mle_kit_mcp.files import get_workspace_dir
 
 
@@ -40,3 +40,10 @@ def test_bash_ownership() -> None:
     assert os.path.exists(get_workspace_dir() / "dummy")
     assert os.stat(get_workspace_dir() / "dummy").st_uid == os.getuid()
     assert os.stat(get_workspace_dir() / "dummy").st_gid == os.getgid()
+
+
+def test_install_with_apt() -> None:
+    result = install_with_apt("htop")
+    assert "Processing triggers" in result
+    assert "htop" in result
+    assert "will be installed" in result

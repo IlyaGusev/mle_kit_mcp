@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     WORKSPACE_DIR: Optional[str] = None
     HOST_WORKSPACE_DIR: Optional[str] = None
     PORT: int = 5057
+    MLE_KIT_IMAGE: str = (
+        "phoenix120/holosophos_mle@sha256:be537e378315cb8796163ad5aabbc11077003e7afa141c9141f35a42091b4862"
+    )
 
     GPU_TYPE: str = "RTX_3090"
     DISK_SPACE: int = 300
