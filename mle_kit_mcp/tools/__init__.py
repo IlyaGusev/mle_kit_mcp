@@ -1,4 +1,4 @@
-from .bash import bash
+from .bash import bash, install_with_apt
 from .text_editor import text_editor
 from .remote_gpu import (
     remote_bash,
@@ -13,6 +13,7 @@ from .file_system import use_glob, use_grep
 
 __all__ = [
     "bash",
+    "install_with_apt",
     "text_editor",
     "remote_bash",
     "remote_download",

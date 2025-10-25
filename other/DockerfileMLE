@@ -17,14 +17,15 @@ RUN apt-get install python3-dev \
     tesseract-ocr \
     ripgrep \
     ninja-build \
+    apt-utils \
     -y
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3 get-pip.py
-RUN pip3 install transformers==4.49.0 \
-    peft==0.14.0 \
-    accelerate==1.4.0 \
-    bitsandbytes==0.45.3 \
-    trl==0.12.1 \
+RUN pip3 install transformers==4.57.1 \
+    peft==0.17.1 \
+    accelerate==1.10.1 \
+    bitsandbytes==0.48.1 \
+    trl==0.24.0 \
     fire>=0.6.0 \
     evaluate==0.4.3 \
     datasets==3.3.2 \
@@ -33,5 +34,4 @@ RUN pip3 install transformers==4.49.0 \
     torchaudio==2.4.1 \
     matplotlib==3.10.1 \
     xgboost==3.0.2 \
-    smolagents==1.17.0 \
     lightgbm==4.6.0

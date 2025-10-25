@@ -2,19 +2,19 @@ import atexit
 import signal
 import shlex
 import os
-from typing import Optional, Any
+from typing import Optional, Any, Union, Sequence
 
 from docker import from_env as docker_from_env  # type: ignore
 from docker import DockerClient
 from docker.models.containers import Container  # type: ignore
 
 from mle_kit_mcp.files import get_host_workspace_dir
+from mle_kit_mcp.settings import settings
 
 
 _container = None
 _client = None
 
-BASE_IMAGE = "phoenix120/holosophos_mle"
 DOCKER_WORKSPACE_DIR_PATH = "/workdir"
 
 
@@ -30,7 +30,7 @@ def create_container() -> Container:
     uid = os.getuid()
     gid = os.getgid()
     container = client.containers.run(
-        BASE_IMAGE,
+        settings.MLE_KIT_IMAGE,
         "tail -f /dev/null",
         detach=True,
         remove=True,
@@ -76,25 +76,12 @@ signal.signal(signal.SIGINT, cleanup_container)
 signal.signal(signal.SIGTERM, cleanup_container)
 
 
-def bash(
+def _run_bash_command(
     command: str,
-    cwd: Optional[str] = None,
     timeout: int = 60,
+    cwd: Optional[str] = None,
+    run_as_root: bool = False,
 ) -> str:
-    """
-    Run commands in a bash shell.
-    When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
-    You don't have access to the internet via this tool.
-    You do have access to a mirror of common linux and python packages via apt and pip.
-    State is persistent across command calls and discussions with the user.
-    To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.
-    Please avoid commands that may produce a very large amount of output.
-
-    Args:
-        command: The bash command to run.
-        cwd: The working directory to run the command in. Relative to the workspace directory.
-        timeout: Timeout for the command execution in seconds. Kills after this. 60 seconds by default.
-    """
     assert timeout and timeout > 0, "Timeout must be set and greater than 0"
     container = get_container()
     workdir = DOCKER_WORKSPACE_DIR_PATH
@@ -110,6 +97,7 @@ def bash(
         stdout=True,
         stderr=True,
         demux=True,
+        user="root" if run_as_root else None,
     )
     stdout_bytes, stderr_bytes = (
         result.output if isinstance(result.output, tuple) else (result.output, b"")
@@ -134,3 +122,57 @@ def bash(
     if not output:
         output = "No output from the command"
     return output
+
+
+def bash(
+    command: str,
+    cwd: Optional[str] = None,
+    timeout: int = 60,
+) -> str:
+    """
+    Run commands in a bash shell.
+    When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
+    You don't have access to the internet via this tool.
+    You do have access to a mirror of common linux and python packages via apt and pip.
+    State is persistent across command calls and discussions with the user.
+    To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.
+    Please avoid commands that may produce a very large amount of output.
+
+    Args:
+        command: The bash command to run.
+        cwd: The working directory to run the command in. Relative to the workspace directory.
+        timeout: Timeout for the command execution in seconds. Kills after this. 60 seconds by default.
+    """
+    return _run_bash_command(command=command, timeout=timeout, cwd=cwd, run_as_root=False)
+
+
+def install_with_apt(
+    packages: Union[str, Sequence[str]],
+    update: bool = True,
+    timeout: int = 600,
+) -> str:
+    """
+    Install one or more apt packages inside the Docker container as the root user.
+
+    Args:
+        packages: A single package name or a sequence of package names.
+        update: Whether to run 'apt-get update' before install. Defaults to True.
+        timeout: Timeout for the entire apt operation in seconds. Defaults to 600.
+    """
+
+    if isinstance(packages, str):
+        packages_str = packages.strip()
+    else:
+        packages_str = " ".join(shlex.quote(p) for p in packages)
+
+    if not packages_str:
+        return "No packages specified"
+
+    apt_commands = []
+    if update:
+        apt_commands.append("apt-get update -y")
+    apt_commands.append(
+        f"DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends {packages_str}"
+    )
+    command = " && ".join(apt_commands)
+    return _run_bash_command(command=command, timeout=timeout, run_as_root=True)
