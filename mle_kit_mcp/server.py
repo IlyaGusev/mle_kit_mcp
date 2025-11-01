@@ -4,7 +4,7 @@ import fire  # type: ignore
 from mcp.server.fastmcp import FastMCP
 
 from mle_kit_mcp.settings import settings
-from mle_kit_mcp.tools.bash import bash
+from mle_kit_mcp.tools.bash import bash, install_with_apt
 from mle_kit_mcp.tools.text_editor import text_editor
 from mle_kit_mcp.tools.remote_gpu import (
     remote_bash,
@@ -42,6 +42,7 @@ def run(
     remote_text_editor = create_remote_text_editor(text_editor)
 
     server.add_tool(bash)
+    server.add_tool(install_with_apt)
     server.add_tool(text_editor)
     server.add_tool(remote_bash)
     server.add_tool(remote_text_editor)
